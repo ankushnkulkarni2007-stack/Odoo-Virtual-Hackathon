@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>WebSocket Test Client</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 640px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        #log {
+            background: #111;
+            color: #0f0;
+            padding: 12px;
+            height: 260px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            border-radius: 6px;
+        }
+
+        input,
+        button {
+            font-size: 14px;
+            padding: 6px 10px;
+            margin-top: 8px;
+        }
+
+        #status {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Local Backend WebSocket Tester</h2>
+    <p>Status: <span id="status">connecting...</span></p>
+
+    <div id="log"></div>
+
+    <div>
+        <input id="sensorName" placeholder="sensor_name" value="temp-1" />
+        <input id="sensorValue" placeholder="value" value="21.5" />
+        <button onclick="sendReading()">Send Reading</button>
+    </div>
+
+    <script>
+        const logEl = document.getElementById("log");
+        const statusEl = document.getElementById("status");
+
+        function log(msg) {
+            logEl.textContent += msg + "\n";
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        const socket = new WebSocket("ws://127.0.0.1:8000/ws");
+
+        socket.onopen = () => {
+            statusEl.textContent = "connected";
+            log("[connected to ws://127.0.0.1:8000/ws]");
+        };
+
+        socket.onmessage = (event) => {
+            log("<< received: " + event.data);
+        };
+
+        socket.onclose = () => {
+            statusEl.textContent = "disconnected";
+            log("[connection closed]");
+        };
+
+        socket.onerror = (err) => {
+            statusEl.textContent = "error (is the server running?)";
+            log("[error] " + JSON.stringify(err));
+        };
+
+        function sendReading() {
+            const sensor_name = document.getElementById("sensorName").value;
+            const value = parseFloat(document.getElementById("sensorValue").value);
+            const payload = JSON.stringify({ sensor_name, value });
+            socket.send(payload);
+            log(">> sent: " + payload);
+        }
+    </script>
+</body>
+
+</html>
