@@ -360,9 +360,7 @@ def signin(payload: SignInIn):
     finally:
         conn.close()
 
-    if row is None or not verify_password(
-        payload.password, row["password_hash"]
-    ):
+    if row is None or not verify_password(payload.password, row["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
