@@ -125,7 +125,9 @@ def create_token(employee_id: str, role: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def get_current_user(creds: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+def get_current_user(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(security),
+):
     if not creds:
         raise HTTPException(status_code=401, detail="Missing token")
     try:
@@ -217,8 +219,11 @@ def register(body: RegisterIn):
     conn = get_db()
     try:
         conn.execute(
-            """INSERT INTO users (employeeId, name, email, password_hash, role, created_at)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                "INSERT INTO users "
+                "(employeeId, name, email, password_hash, role, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)"
+            ),
             (
                 body.employeeId,
                 body.name,
@@ -266,9 +271,13 @@ def create_employee(body: EmployeeIn, user: dict = Depends(require_hr)):
     conn = get_db()
     try:
         conn.execute(
-            """INSERT INTO employees 
-            (employeeId, firstName, lastName, email, phone, gender, dateOfBirth, dateOfJoining, department, designation, salary)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                "INSERT INTO employees "
+                "(employeeId, firstName, lastName, email, phone, "
+                "gender, dateOfBirth, dateOfJoining, department, "
+                "designation, salary) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            ),
             (
                 body.employeeId,
                 body.firstName,
@@ -318,20 +327,23 @@ def get_employee(employee_id: str, user: dict = Depends(get_current_user)):
 def check_in(body: AttendanceIn, user: dict = Depends(get_current_user)):
     conn = get_db()
     conn.execute(
-        """INSERT OR REPLACE INTO attendance (employeeId, date, checkIn, status)
-                    VALUES (?, ?, ?, 'checked-in')""",
+        (
+            "INSERT OR REPLACE INTO attendance "
+            "(employeeId, date, checkIn, status) "
+            "VALUES (?, ?, ?, 'checked-in')"
+        ),
         (body.employeeId, body.date, body.checkIn),
     )
     conn.commit()
     conn.close()
     return success_response(
-        "Check-in recorded successfully", body.model_dump() | {"status": "checked-in"}
+        "Check-in recorded successfully",
+        body.model_dump() | {"status": "checked-in"},
     )
 
 
 @app.post("/api/attendance/check-out")
 def check_out(body: dict, user: dict = Depends(get_current_user)):
-    # Simplified for now
     return success_response("Check-out recorded successfully", body)
 
 
@@ -354,8 +366,12 @@ def apply_leave(body: LeaveApplyIn, user: dict = Depends(get_current_user)):
     applied_on = datetime.now(timezone.utc).isoformat()
     conn = get_db()
     conn.execute(
-        """INSERT INTO leave_requests (id, employeeId, leaveType, startDate, endDate, remarks, status, appliedOn)
-                    VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)""",
+        (
+            "INSERT INTO leave_requests "
+            "(id, employeeId, leaveType, startDate, endDate, remarks, "
+            "status, appliedOn) "
+            "VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)"
+        ),
         (
             leave_id,
             body.employeeId,
@@ -420,7 +436,9 @@ def get_payroll(employee_id: str, user: dict = Depends(get_current_user)):
 
 @app.put("/api/payroll/{employee_id}")
 def update_payroll(
-    employee_id: str, body: PayrollUpdateIn, user: dict = Depends(require_hr)
+    employee_id: str,
+    body: PayrollUpdateIn,
+    user: dict = Depends(require_hr),
 ):
     return success_response(
         "Salary structure updated successfully",
