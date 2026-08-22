@@ -1,24 +1,46 @@
 const express = require('express');
 const { employeeValidator } = require('../validators/employeeValidator');
-const { employeeProfileUpdateValidator, adminProfileUpdateValidator } = require('../validators/profileValidator');
+const {
+  employeeProfileUpdateValidator,
+  adminProfileUpdateValidator,
+} = require('../validators/profileValidator');
 const handleValidation = require('../middlewares/handleValidation');
+const { protect, authorize } = require('../middlewares/auth');
 const employeeController = require('../controllers/employeeController');
 
 const router = express.Router();
 
-// Create a new employee (Admin only)
-router.post('/', employeeValidator, handleValidation, employeeController.create);
+// Every employee route requires a logged-in user
+router.use(protect);
 
-// Get all employees (Admin only)
-router.get('/', employeeController.getAll);
+// Admin/HR only
+router.post(
+  '/',
+  authorize('admin', 'hr'),
+  employeeValidator,
+  handleValidation,
+  employeeController.create
+);
+router.get('/', authorize('admin', 'hr'), employeeController.getAll);
 
-// Get employee by ID
+// Employees may read their own profile; the controller enforces that
 router.get('/:id', employeeController.getById);
 
-// Employee updates their own profile (address, phone, profile picture only)
-router.patch('/:id/self', employeeProfileUpdateValidator, handleValidation, employeeController.updateSelf);
+// Employee self-service: address, phone, profile picture only
+router.patch(
+  '/:id/self',
+  employeeProfileUpdateValidator,
+  handleValidation,
+  employeeController.updateSelf
+);
 
-// Admin updates employee profile (all fields)
-router.patch('/:id/admin', adminProfileUpdateValidator, handleValidation, employeeController.updateByAdmin);
+// Admin/HR: any field
+router.patch(
+  '/:id/admin',
+  authorize('admin', 'hr'),
+  adminProfileUpdateValidator,
+  handleValidation,
+  employeeController.updateByAdmin
+);
 
 module.exports = router;

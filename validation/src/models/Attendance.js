@@ -99,7 +99,10 @@ attendanceSchema.pre('validate', function () {
     const minutes = outH * 60 + outM - (inH * 60 + inM);
 
     if (minutes <= 0) {
-      throw new Error('Check-out time must be after check-in time');
+      // invalidate() (rather than throw) produces a proper ValidationError,
+      // so the API returns 400 with a field name instead of a 500.
+      this.invalidate('checkOut', 'Check-out time must be after check-in time');
+      return;
     }
 
     this.workingHours = Number((minutes / 60).toFixed(2));

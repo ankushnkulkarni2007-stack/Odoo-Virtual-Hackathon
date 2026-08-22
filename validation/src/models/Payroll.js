@@ -104,7 +104,7 @@ payrollSchema.pre('validate', function () {
   if (allowances < 0 || deductions < 0) return;
 
   if (deductions > basic + allowances) {
-    throw new Error('Deductions cannot exceed basic salary plus allowances');
+    this.invalidate('deductions', 'Deductions cannot exceed basic salary plus allowances');
   }
 });
 

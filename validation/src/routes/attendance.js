@@ -1,20 +1,30 @@
 const express = require('express');
-const { checkInValidator, checkOutValidator, attendanceStatusValidator } = require('../validators/attendanceValidator');
+const {
+  checkInValidator,
+  checkOutValidator,
+  attendanceStatusValidator,
+} = require('../validators/attendanceValidator');
 const handleValidation = require('../middlewares/handleValidation');
+const { protect, authorize } = require('../middlewares/auth');
 const attendanceController = require('../controllers/attendanceController');
 
 const router = express.Router();
 
-// Employee check-in
-router.post('/check-in', checkInValidator, handleValidation, attendanceController.checkIn);
+router.use(protect);
 
-// Employee check-out
+router.post('/check-in', checkInValidator, handleValidation, attendanceController.checkIn);
 router.post('/check-out', checkOutValidator, handleValidation, attendanceController.checkOut);
 
-// Admin/HR manually set attendance status (Present/Absent/Half-day/Leave)
-router.put('/status', attendanceStatusValidator, handleValidation, attendanceController.setStatus);
+// Manual status override is an Admin/HR action
+router.put(
+  '/status',
+  authorize('admin', 'hr'),
+  attendanceStatusValidator,
+  handleValidation,
+  attendanceController.setStatus
+);
 
-// Get attendance records (employee - own records, admin - all records)
+// Employees get their own records, Admin/HR get everyone's (Spec 3.4.2)
 router.get('/', attendanceController.getRecords);
 
 module.exports = router;
