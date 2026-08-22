@@ -181,4 +181,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+validation_backup/
 *.db
