@@ -1,4 +1,4 @@
-import axios from 'axios';
+/*import axios from 'axios';
 
 const API = axios.create({
   baseURL: 'http://localhost:4000/api',
@@ -8,7 +8,7 @@ const API = axios.create({
 });
 
 // Mock Interceptor: Allows UI testing while backend is offline
-API.interceptors.response.use(
+/*API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (!error.response || error.code === 'ERR_NETWORK') {
@@ -61,5 +61,15 @@ export const updateSelfProfile = (id, data) => API.patch(`/employees/${id}/self`
 // Payroll Endpoints
 export const getPayroll = () => API.get('/payroll');
 export const getPayrollByEmployeeId = (employeeId) => API.get(`/payroll/${employeeId}`);
+
+export default API;*/
+import axios from 'axios';
+
+const API = axios.create({
+  baseURL: 'https://factory-avon-thompson-wanna.trycloudflare.com',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export default API;
