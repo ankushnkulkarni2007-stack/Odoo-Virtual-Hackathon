@@ -131,7 +131,7 @@ def get_current_user(creds: Optional[HTTPAuthorizationCredentials] = Depends(sec
     try:
         payload = jwt.decode(creds.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return {"employeeId": payload["sub"], "role": payload["role"]}
-    except:
+    except (jwt.InvalidTokenError, KeyError):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
