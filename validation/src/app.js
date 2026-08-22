@@ -48,12 +48,13 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler — must come after all routes.
+// Note: Express 5 removed the '*' path syntax, so this is a bare middleware.
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: 'Route not found',
-    path: req.path,
+    path: req.originalUrl,
   });
 });
 

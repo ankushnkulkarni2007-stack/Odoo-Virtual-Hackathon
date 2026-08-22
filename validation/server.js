@@ -1,16 +1,23 @@
+require('dotenv').config();
+
 const app = require('./src/app');
+const connectDB = require('./src/config/database');
 
 const PORT = process.env.PORT || 4000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-app.listen(PORT, () => {
-  console.log(`
+(async () => {
+  // Connect to MongoDB before accepting traffic
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`
 ╔══════════════════════════════════════════════════════╗
-║     Dayflow - HRMS Server Starting                  ║
+║          Dayflow - HRMS Server Running               ║
 ╚══════════════════════════════════════════════════════╝
-Environment: ${NODE_ENV}
-Server Running on: http://localhost:${PORT}
-Health Check: http://localhost:${PORT}/health
-API Documentation: http://localhost:${PORT}/
-  `);
-});
+Environment : ${NODE_ENV}
+Server      : http://localhost:${PORT}
+Health      : http://localhost:${PORT}/health
+    `);
+  });
+})();
