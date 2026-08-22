@@ -1,75 +1,95 @@
 # Dayflow - Human Resource Management System
 
-A comprehensive HRMS backend built with Node.js and Express, featuring complete validation for employee management, attendance tracking, leave management, and payroll operations.
+A complete HRMS: Express + MongoDB backend with a browser UI, covering
+authentication, employee records, attendance, leave workflows and payroll.
 
-## 📋 Project Structure
+## Quick start
+
+```bash
+npm install
+cp .env.example .env     # set MONGO_URI (or leave the DB_* defaults)
+npm run seed             # load sample data
+npm start                # then open http://localhost:4000
+```
+
+The UI is served by the same Express app at `http://localhost:4000`, so there
+is no separate frontend to run and no CORS to configure.
+
+### Demo accounts
+
+`npm run seed` creates 7 employees with 30 days of attendance, leave requests
+in every state, and payroll records. All accounts use the password
+**`Dayflow@123`**, and the login screen has one-click buttons for these three:
+
+| Role | Email | Sees |
+|---|---|---|
+| Admin | rajesh@dayflow.com | Everything, including salary changes |
+| HR | priya@dayflow.com | Everything except salary changes |
+| Employee | aditi@dayflow.com | Only their own records |
+
+`EMP-101` (Aditi) is left un-checked-in for the current day, so you can press
+**Check in** during a walkthrough.
+
+### Scripts
+
+| Command | What it does |
+|---|---|
+| `npm start` | Run the server |
+| `npm run dev` | Run with auto-reload |
+| `npm run seed` | Wipe and reload sample data |
+| `npm run test:models` | Schema rules — no database needed |
+| `npm run test:api` | Full API flow against MongoDB (uses a `_test` database) |
+
+## Project Structure
 
 ```
 dayflow-project/
+├── public/
+│   └── index.html                    # The whole web UI (single file)
 ├── src/
+│   ├── config/
+│   │   └── database.js               # MongoDB connection
+│   ├── models/                       # Mongoose schemas
+│   │   ├── User.js                   # Login accounts, password hashing
+│   │   ├── Employee.js               # HR records, leave balance
+│   │   ├── Attendance.js             # One doc per employee per day
+│   │   ├── Leave.js                  # Requests + approval decisions
+│   │   ├── Payroll.js                # Versioned salary records
+│   │   └── index.js                  # Barrel export
 │   ├── middlewares/
-│   │   └── handleValidation.js       # Validation error handler
-│   ├── validators/
-│   │   ├── authValidator.js          # Auth validation rules
-│   │   ├── employeeValidator.js      # Employee validation rules
-│   │   ├── attendanceValidator.js    # Attendance validation rules
-│   │   ├── leaveValidator.js         # Leave validation rules
-│   │   ├── profileValidator.js       # Profile validation rules
-│   │   └── payrollValidator.js       # Payroll validation rules
-│   ├── routes/
-│   │   ├── auth.js                   # Auth routes (register, login)
-│   │   ├── employees.js              # Employee CRUD routes
-│   │   ├── attendance.js             # Attendance routes
-│   │   ├── leave.js                  # Leave request routes
-│   │   └── payroll.js                # Payroll routes
-│   ├── controllers/
-│   │   ├── authController.js         # Auth business logic
-│   │   ├── employeeController.js     # Employee business logic
-│   │   ├── attendanceController.js   # Attendance business logic
-│   │   ├── leaveController.js        # Leave business logic
-│   │   └── payrollController.js      # Payroll business logic
-│   ├── models/
-│   │   └── (your database models here)
-│   └── app.js                        # Express app setup
+│   │   ├── auth.js                   # JWT verify, role guards, ownership
+│   │   └── handleValidation.js       # Validation error formatter
+│   ├── validators/                   # express-validator rule sets
+│   │   ├── authValidator.js
+│   │   ├── employeeValidator.js
+│   │   ├── attendanceValidator.js
+│   │   ├── leaveValidator.js
+│   │   ├── profileValidator.js
+│   │   └── payrollValidator.js
+│   ├── controllers/                  # Business logic, wired to the models
+│   │   ├── authController.js
+│   │   ├── employeeController.js
+│   │   ├── attendanceController.js
+│   │   ├── leaveController.js
+│   │   └── payrollController.js
+│   ├── routes/                       # Endpoint definitions + guards
+│   ├── utils/
+│   │   ├── asyncHandler.js           # Forwards async errors to Express
+│   │   └── ApiError.js               # Error with an HTTP status
+│   ├── seed.js                       # Sample data
+│   └── app.js                        # Express setup, static UI, error handler
 ├── server.js                         # Entry point
-├── package.json
-├── .env.example
+├── test-models.js                    # Schema tests (no DB)
+├── test-api.js                       # Integration tests (needs MongoDB)
+├── API_GUIDE.md                      # Relationships + permission model
 └── README.md
 ```
 
-## 🚀 Getting Started
+Request flow:
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
-- Code editor (VS Code recommended)
-
-### Installation
-
-1. **Clone the repository** (or create the folder structure as shown above)
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Create .env file:**
-   ```bash
-   cp .env.example .env
-   ```
-   Update `.env` with your configuration
-
-4. **Start the server:**
-   ```bash
-   npm start
-   ```
-   
-   Or for development with auto-reload:
-   ```bash
-   npm run dev
-   ```
-
-The server will start on `http://localhost:4000`
+```
+Request → protect (JWT) → authorize (role) → validator → handleValidation → controller → model → MongoDB
+```
 
 ## 📚 API Endpoints
 
@@ -134,75 +154,37 @@ The server will start on `http://localhost:4000`
 - **Salary**: Positive number
 - **Deductions**: Cannot exceed basic salary + allowances
 
-## 🔧 Usage Example
+## Usage examples
 
-### Register User
+Every endpoint except register/login requires a Bearer token.
+
 ```bash
-curl -X POST http://localhost:4000/api/auth/register \
+# 1. Log in and capture the token
+TOKEN=$(curl -s -X POST http://localhost:4000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "employeeId": "EMP-101",
-    "email": "john@company.com",
-    "password": "SecurePass123!",
-    "confirmPassword": "SecurePass123!",
-    "role": "employee"
-  }'
-```
+  -d '{"email":"aditi@dayflow.com","password":"Dayflow@123"}' \
+  | node -pe "JSON.parse(require('fs').readFileSync(0)).data.token")
 
-### Apply for Leave
-```bash
-curl -X POST http://localhost:4000/api/leave/apply \
-  -H "Content-Type: application/json" \
-  -d '{
-    "employeeId": "EMP-101",
-    "leaveType": "sick",
-    "startDate": "2026-09-01",
-    "endDate": "2026-09-03",
-    "remarks": "Medical appointment"
-  }'
-```
-
-### Check-in
-```bash
+# 2. Check in
 curl -X POST http://localhost:4000/api/attendance/check-in \
-  -H "Content-Type: application/json" \
-  -d '{
-    "employeeId": "EMP-101",
-    "date": "2026-08-22",
-    "checkIn": "09:00"
-  }'
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
+  -d '{"employeeId":"EMP-101","date":"'$(date +%F)'","checkIn":"09:00"}'
+
+# 3. Apply for leave
+curl -X POST http://localhost:4000/api/leave/apply \
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
+  -d '{"employeeId":"EMP-101","leaveType":"sick","startDate":"2026-09-01",
+       "endDate":"2026-09-03","remarks":"Medical appointment"}'
 ```
 
-## 💡 Next Steps
+## Notes
 
-1. **Database Integration**: Connect MongoDB or PostgreSQL to the database models
-2. **Authentication**: Implement JWT token generation and verification
-3. **Error Handling**: Add custom error handling for business logic errors
-4. **Email Notifications**: Set up email service for notifications
-5. **Testing**: Add unit and integration tests
-6. **API Documentation**: Generate Swagger/OpenAPI documentation
+- Validation runs **before** controllers, so invalid data never reaches the database.
+- The models validate independently as a second line of defence — a bad write
+  through any path is still rejected.
+- Every failure returns the same `{ success, message, errors[] }` shape.
+- Email sending is the one piece still stubbed: registration generates a
+  verification token but does not mail it. Set `REQUIRE_EMAIL_VERIFICATION=true`
+  in `.env` once SMTP is wired up.
 
-## 📝 Notes
-
-- All validators are independent and reusable
-- The `handleValidation` middleware catches all validation errors
-- Controllers contain placeholder TODO comments for business logic
-- All endpoints return consistent JSON responses with `success` flag
-- Validation happens **before** controllers to ensure data integrity
-
-## 🤝 Team Collaboration
-
-- **Validations** (your part): ✅ Complete in `src/validators/`
-- **Routes**: Set up in `src/routes/`
-- **Controllers**: Business logic implementation in `src/controllers/`
-- **Models**: Database models in `src/models/`
-- **Middleware**: Authentication, logging in `src/middlewares/`
-
-## 📄 License
-
-ISC
-
----
-
-**Happy Coding! 🎉**
+See `API_GUIDE.md` for the User→Employee relationship and the full permission model.

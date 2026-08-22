@@ -43,11 +43,9 @@ const checkOutValidator = [
     .isISO8601()
     .withMessage('Date must be a valid date (YYYY-MM-DD)'),
 
-  // Optional: the stored check-in time is the source of truth once the record
-  // exists. When the client does send it, the rule below still catches an
-  // impossible pair before the request reaches the database.
   body('checkIn')
-    .optional({ checkFalsy: true })
+    .notEmpty()
+    .withMessage('Check-in time is required for comparison')
     .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
     .withMessage('Check-in time must be in HH:MM (24-hour) format'),
 

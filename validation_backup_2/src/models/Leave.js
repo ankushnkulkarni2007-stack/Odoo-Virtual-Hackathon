@@ -89,8 +89,7 @@ leaveSchema.index({ employee: 1, startDate: 1, endDate: 1 });
 leaveSchema.pre('validate', function () {
   if (this.startDate && this.endDate) {
     if (this.endDate < this.startDate) {
-      this.invalidate('endDate', 'End date cannot be before start date');
-      return;
+      throw new Error('End date cannot be before start date');
     }
     const msPerDay = 1000 * 60 * 60 * 24;
     const start = new Date(this.startDate).setHours(0, 0, 0, 0);

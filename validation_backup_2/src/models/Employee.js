@@ -170,8 +170,7 @@ employeeSchema.index({ department: 1, employmentStatus: 1 });
 // Cross-field rule the per-field validators can't express
 employeeSchema.pre('validate', function () {
   if (this.dateOfBirth && this.dateOfJoining && this.dateOfJoining < this.dateOfBirth) {
-    // invalidate() yields a ValidationError → 400, not an unhandled 500
-    this.invalidate('dateOfJoining', 'Date of joining cannot be before date of birth');
+    throw new Error('Date of joining cannot be before date of birth');
   }
 });
 
