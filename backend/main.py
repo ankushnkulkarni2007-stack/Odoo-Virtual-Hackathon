@@ -33,11 +33,12 @@ DB_PATH = BASE_DIR / "app.db"
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # fine for local dev; lock this down for production
+    allow_origins=["*"],  # fine for local dev; lock this down for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ---------------------------------------------------------------------------
 # 3. DATABASE HELPERS
@@ -68,6 +69,7 @@ def init_db() -> None:
 
 init_db()  # runs immediately when the server starts
 
+
 # ---------------------------------------------------------------------------
 # 4. DATA MODELS (what a valid request/response looks like)
 # ---------------------------------------------------------------------------
@@ -81,6 +83,7 @@ class ReadingOut(BaseModel):
     sensor_name: str
     value: float
     timestamp: str
+
 
 # ---------------------------------------------------------------------------
 # 5. WEBSOCKET CONNECTION MANAGER
@@ -113,12 +116,14 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+
 # ---------------------------------------------------------------------------
 # 6. ROOT ENDPOINT (quick sanity check)
 # ---------------------------------------------------------------------------
 @app.get("/")
 def root():
     return {"status": "ok", "message": "Backend is running locally."}
+
 
 # ---------------------------------------------------------------------------
 # 7. REST ENDPOINT: CREATE A READING  (POST /readings)
@@ -149,6 +154,7 @@ async def create_reading(reading: ReadingIn):
     await manager.broadcast(new_reading)  # push live to every WebSocket client
     return new_reading
 
+
 # ---------------------------------------------------------------------------
 # 8. REST ENDPOINT: GET ALL READINGS  (GET /readings)
 # ---------------------------------------------------------------------------
@@ -162,6 +168,7 @@ def get_readings(limit: int = 50):
     finally:
         conn.close()
     return [dict(row) for row in rows]
+
 
 # ---------------------------------------------------------------------------
 # 9. REST ENDPOINT: GET ONE READING BY ID  (GET /readings/{id})
@@ -181,6 +188,7 @@ def get_reading(reading_id: int):
             status_code=404, detail=f"No reading found with id {reading_id}"
         )
     return dict(row)
+
 
 # ---------------------------------------------------------------------------
 # 10. WEBSOCKET ENDPOINT  (ws://127.0.0.1:8000/ws)
